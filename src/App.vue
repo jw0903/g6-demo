@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue'
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import HelloWorld from './components/HelloWorld.vue'
 import { ConcentricLayout } from './layout/concentric'
-import data from './data.json'
+// import data from './data.json'
 import G6 from '@antv/g6'
 const g6ref = ref()
 const initData = {
@@ -13,6 +13,7 @@ const initData = {
         {
             id: 'center', // 节点的唯一标识
             label: '起始点', // 节点文本
+            type: 'image'
         },
         {
             "id": "node1",
@@ -41,19 +42,29 @@ const initData = {
         },
         {
             "id": "node2-1",
-            "label": "节点5",
+            "label": "节点2-1",
             "num": 5
         },
         {
             "id": "node3-1",
-            "label": "节点6",
+            "label": "节点3-1",
             "num": 6
         },
         {
             "id": "node4-1",
-            "label": "节点7",
+            "label": "节点4-1",
             "num": 7
         },
+        {
+            "id": "node5",
+            "label": "node5",
+            num: 7
+        },
+        {
+            "id": "node6",
+            "label": "node6",
+            num: 8
+        }
     ],
     // 边集
     edges: [
@@ -109,9 +120,22 @@ const initData = {
             "target": "node4",
             "label": "line7"
         },
+        {
+            "source": "node5",
+            "target": "center",
+            "label": "line7"
+        },
+        {
+            "source": "node6",
+            "target": "center",
+            "label": "line8"
+        },
     ],
 };
+
+// 自定义布局
 G6.registerLayout('test-layout', ConcentricLayout)
+
 onMounted(() => {
     const width = g6ref.value.scrollWidth;
     const height = g6ref.value.scrollHeight || 500;
@@ -122,11 +146,12 @@ onMounted(() => {
         layout: {
             type: 'test-layout',
             center: [400, 400],     // 可选，
-            linkDistance: 190,         // 可选，边长
+            linkDistance: 150,         // 可选，边长
             preventOverlap: true,     // 可选，必须配合 nodeSize
-            nodeSize: 150,             // 可选
+            nodeSize: 100,             // 可选
+            maxLevelDiff: 1,
             // sweep: 10,                // 可选
-            sortBy: 'degree',         // 可选
+            // sortBy: 'degree',         // 可选
         },
         defaultNode: {
             size: 80,
