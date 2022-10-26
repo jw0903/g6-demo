@@ -1,15 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-defineProps<{ msg: string }>()
+const props = defineProps<{ msg: string, x: number, y: number }>()
 
+const style = computed(() => {
+    return {
+        top: `${props.y}px`,
+        left: `${props.x}px`
+    }
+})
 const count = ref(0)
+const clickfn = () => {
+    alert('wer')
+}
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
+    <div :style="style" class="tooltip">
+        <h3>{{ msg }}</h3>
+        <IxButton mode="primary" @click="clickfn">Primary</IxButton>
 
-  <!-- <div class="card">
+    </div>
+
+    <!-- <div class="card">
     <button type="button" @click="count++">count is {{ count }}</button>
     <p>
       Edit
@@ -32,7 +45,17 @@ const count = ref(0)
 </template>
 
 <style scoped>
+.tooltip {
+    position: absolute;
+    border: 1px solid #ccc;
+    padding: 10px;
+    height: 60px;
+    width: 120px;
+    background: #fff;
+    overflow: auto;
+}
+
 .read-the-docs {
-  color: #888;
+    color: #888;
 }
 </style>

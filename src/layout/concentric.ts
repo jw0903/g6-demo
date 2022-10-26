@@ -121,6 +121,7 @@ export class ConcentricLayout extends Base {
         if (n === 1) {
             nodes[0].x = center[0];
             nodes[0].y = center[1];
+            nodes[0].level = 0;
             self.onLayoutEnd?.();
             return;
         }
@@ -199,7 +200,6 @@ export class ConcentricLayout extends Base {
         const levels: any[] = [[]];
         let currentLevel = levels[0];
         layoutNodes.forEach((node) => {
-            console.log(node)
             if (currentLevel.length > 0) {
                 const diff = Math.abs(
                     currentLevel[0][self.sortBy] - (node as any)[self.sortBy]
@@ -209,6 +209,7 @@ export class ConcentricLayout extends Base {
                     levels.push(currentLevel);
                 }
             }
+            node.level = levels.length
             currentLevel.push(node);
         });
 
@@ -264,20 +265,31 @@ export class ConcentricLayout extends Base {
                 rr += rDeltaMax;
             });
         }
-        console.log(levels)
+        function findNode(node) {
+            const targetEdge = edges.find(item => item.source === node.id)
+            return nodes.find(node => node.id === targetEdge?.target)
+        }
         // calculate the node positions
-        levels.forEach((level) => {
+        levels.forEach((level, levelIdx) => {
             const dTheta = level.dTheta;
-            const rr = level.r;
+            let rr = level.r;
+            if (levelIdx > 1) {
+                rr = rr * 3 / 4
+                console.log(level.r, rr, levelIdx)
+            }
             level.forEach((node: INode, j: number) => {
-                const theta = self.startAngle + (self.clockwise ? 1 : -1) * dTheta * j;
+                let theta = self.startAngle + (self.clockwise ? 1 : -1) * dTheta * j;
+                const targetNode = findNode(node)
+                if (targetNode && targetNode.id !== 'center') {
+                    theta = targetNode.angle
+                }
                 /**
                  * cos(Math.PI) = -1
                  * cos(0) = 1
                  */
+                node.angle = theta
                 node.x = center[0] + rr * Math.cos(theta);
                 node.y = center[1] + rr * Math.sin(theta);
-                console.log(node.id, node.x, node.y, theta, rr)
             });
         });
 

@@ -7,63 +7,71 @@ import { ConcentricLayout } from './layout/concentric'
 // import data from './data.json'
 import G6 from '@antv/g6'
 const g6ref = ref()
+const showToolTip = ref(false)
+const x = ref(0)
+const y = ref(0)
 const initData = {
     // 点集
     nodes: [
         {
             id: 'center', // 节点的唯一标识
             label: '起始点', // 节点文本
+            degree: 100,
             type: 'image'
         },
         {
             "id": "node1",
             "label": "节点1",
-            "num": 1
+            "num": 1,
+            degree: 10,
+            stateStyles: {
+                hover: {
+                    fill: '#d3adf7',
+                }
+            }
         },
         {
             "id": "node1-1",
             "label": "节点1-1",
-            "num": '1-1'
+            "num": '1-1',
+            degree: 4
         },
         {
             "id": "node2",
             "label": "节点2",
-            "num": 2
-        },
-        {
-            "id": "node3",
-            "label": "节点3",
-            "num": 3
-        },
-        {
-            "id": "node4",
-            "label": "节点4",
-            "num": 4
+            "num": 2,
+            degree: 10
         },
         {
             "id": "node2-1",
             "label": "节点2-1",
-            "num": 5
+            "num": 5,
+            degree: 4
+        },
+        {
+            "id": "node3",
+            "label": "节点3",
+            "num": 3,
+            degree: 10
         },
         {
             "id": "node3-1",
             "label": "节点3-1",
-            "num": 6
-        },
-        {
-            "id": "node4-1",
-            "label": "节点4-1",
-            "num": 7
+            "num": 6,
+            degree: 4
         },
         {
             "id": "node5",
             "label": "node5",
-            num: 7
+            num: 7,
+            degree: 10,
         },
         {
             "id": "node6",
             "label": "node6",
-            num: 8
+            type: 'node-name',
+            num: 8,
+            degree: 4
         }
     ],
     // 边集
@@ -74,7 +82,7 @@ const initData = {
             "label": "line1",
             style: {
                 endArrow: true,
-                lineDash: [5, 10]
+                lineDash: [10, 2]
             }
         },
         {
@@ -96,29 +104,19 @@ const initData = {
             }
         },
         {
-            "source": "node3",
-            "target": "center",
-            "label": "line3"
-        },
-        {
-            "source": "node4",
-            "target": "center",
-            "label": "line4"
-        },
-        {
             "source": "node2-1",
             "target": "node2",
             "label": "line5"
         },
         {
+            "source": "node3",
+            "target": "center",
+            "label": "line3"
+        },
+        {
             "source": "node3-1",
             "target": "node3",
             "label": "line6"
-        },
-        {
-            "source": "node4-1",
-            "target": "node4",
-            "label": "line7"
         },
         {
             "source": "node5",
@@ -132,6 +130,42 @@ const initData = {
         },
     ],
 };
+
+
+// 构造空节点
+const nodes = initData.nodes
+const edges = initData.edges
+const centerEdges = edges.filter(i => i.target === 'center')
+centerEdges.forEach(item => {
+    let curNode = nodes.find(i => i.id === item.source)
+    if (curNode?.degree === 4) {
+        console.log(curNode)
+        // 构建新节点
+        let no = {
+            "id": "empty" + curNode.id,
+            degree: 10,
+            size: 1,
+            style: {
+                fill: '#ccc',
+                stroke: '#ccc',
+            }
+        }
+        let centerEdge = {
+            "source": "empty" + curNode.id,
+            "target": "center",
+        }
+        let edge1 = {
+            "source": curNode.id,
+            "target": "empty" + curNode.id,
+        }
+        const idx = edges.findIndex(i => i.source === curNode.id)
+        edges.splice(idx, 1)
+        edges.push(centerEdge)
+        edges.push(edge1)
+        nodes.push(no)
+    }
+})
+
 
 // 自定义布局
 G6.registerLayout('test-layout', ConcentricLayout)
@@ -148,19 +182,67 @@ onMounted(() => {
             center: [400, 400],     // 可选，
             linkDistance: 150,         // 可选，边长
             preventOverlap: true,     // 可选，必须配合 nodeSize
-            nodeSize: 100,             // 可选
+            nodeSize: 150,             // 可选
             maxLevelDiff: 1,
-            // sweep: 10,                // 可选
-            // sortBy: 'degree',         // 可选
+            sortBy: 'degree',         // 可选
         },
         defaultNode: {
-            size: 80,
+            size: 40,
         },
+        nodeStateStyles: {
+            hover: {
+                cursor: 'pointer'
+            }
+        },
+        edgeStateStyles: {
+            hover: {
+                stroke: '#d3adf7',
+                cursor: 'pointer'
+            },
+        }
+        // defaultEdge: {
+        //     stateStyles: {
+        //         hover: {
+        //             fill: '#d3adf7',
+        //         }
+        //     }
+        // }
     });
     // graph.data(data)
     graph.data(initData)
     graph.render()
+    graph.on('node:mouseenter', (e) => {
+        const { item } = e;
+        graph.setItemState(item, 'hover', true)
+    })
+    graph.on('node:mouseleave', (evt) => {
+        const { item } = evt;
+        showToolTip.value = true
+        graph.setItemState(item, 'hover', false);
+        graph.clearItemStates(item, 'selected')
+    })
+    graph.on('node:click', (e) => {
+        const { item } = e
+        graph.setItemState(item, 'selected', true)
+        const model = item?.getModel()
+        const { x: xVal, y: yVal } = model
+        const point = graph.getCanvasByPoint(xVal, yVal)
+        x.value = point.x - 30
+        y.value = point.y - 60
+        showToolTip.value = true
+        // const 
+        console.log('click node', e)
+    })
+    graph.on('edge:mouseenter', (e) => {
+        const { item } = e;
+        graph.setItemState(item, 'hover', true)
+        console.log('mouse enter', e)
+    })
+    graph.on('edge:mouseleave', (evt) => {
+        const { item } = evt
 
+        graph.clearItemStates(item, 'hover')
+    })
 })
 
 </script>
@@ -168,7 +250,7 @@ onMounted(() => {
 <template>
     <div>
         <div id="mountNode" ref="g6ref"></div>
-        <HelloWorld msg="Vite + Vue" />
+        <HelloWorld :x="x" :y="y" v-if="showToolTip" msg="Vite + Vue" />
     </div>
 </template>
 

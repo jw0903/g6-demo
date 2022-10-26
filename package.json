@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@antv/g6": "^4.7.8",
+    "@idux/cdk": "^1.0.1",
+    "@idux/components": "^1.0.1",
+    "@idux/pro": "^1.0.1",
+    "vite-plugin-static-copy": "^0.11.0",
     "vue": "^3.2.37"
   },
   "devDependencies": {
