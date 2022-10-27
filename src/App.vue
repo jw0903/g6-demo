@@ -5,132 +5,89 @@ import { ref, onMounted } from 'vue'
 import HelloWorld from './components/HelloWorld.vue'
 import { ConcentricLayout } from './layout/concentric'
 // import data from './data.json'
-import G6 from '@antv/g6'
+import G6, { ModelConfig } from '@antv/g6'
 const g6ref = ref()
+
+// tooltip 相关配置
 const showToolTip = ref(false)
 const x = ref(0)
 const y = ref(0)
-const initData = {
-    // 点集
-    nodes: [
-        {
-            id: 'center', // 节点的唯一标识
-            label: '起始点', // 节点文本
-            degree: 100,
-            type: 'image'
-        },
-        {
-            "id": "node1",
-            "label": "节点1",
-            "num": 1,
-            degree: 10,
-            stateStyles: {
-                hover: {
-                    fill: '#d3adf7',
-                }
-            }
-        },
-        {
-            "id": "node1-1",
-            "label": "节点1-1",
-            "num": '1-1',
-            degree: 4
-        },
-        {
-            "id": "node2",
-            "label": "节点2",
-            "num": 2,
-            degree: 10
-        },
-        {
-            "id": "node2-1",
-            "label": "节点2-1",
-            "num": 5,
-            degree: 4
-        },
-        {
-            "id": "node3",
-            "label": "节点3",
-            "num": 3,
-            degree: 10
-        },
-        {
-            "id": "node3-1",
-            "label": "节点3-1",
-            "num": 6,
-            degree: 4
-        },
-        {
-            "id": "node5",
-            "label": "node5",
-            num: 7,
-            degree: 10,
-        },
-        {
-            "id": "node6",
-            "label": "node6",
-            type: 'node-name',
-            num: 8,
-            degree: 4
-        }
-    ],
-    // 边集
-    edges: [
-        {
-            "source": "node1",
-            "target": "center",
-            "label": "line1",
-            style: {
-                endArrow: true,
-                lineDash: [10, 2]
-            }
-        },
-        {
-            source: 'node1-1',
-            target: 'node1',
-            style: {
-                endArrow: true,
-            }
-        },
-        {
-            "source": "node2",
-            "target": "center",
-            "label": "line2",
-            style: {
-                endArrow: {
-                    path: G6.Arrow.circle(5, 0),
-                    d: 0
-                }
-            }
-        },
-        {
-            "source": "node2-1",
-            "target": "node2",
-            "label": "line5"
-        },
-        {
-            "source": "node3",
-            "target": "center",
-            "label": "line3"
-        },
-        {
-            "source": "node3-1",
-            "target": "node3",
-            "label": "line6"
-        },
-        {
-            "source": "node5",
-            "target": "center",
-            "label": "line7"
-        },
-        {
-            "source": "node6",
-            "target": "center",
-            "label": "line8"
-        },
-    ],
-};
 
+// mock生成节点、边 测试用
+const nodeArr: any[] = [{
+    id: 'center', // 节点的唯一标识
+    label: '起始点', // 节点文本
+    degree: 100,
+    size: 100,
+    type: 'image'
+}]
+const edgeArr = []
+for (let i = 1; i < 8; i++) {
+    const curNode = {
+        id: `node${i}`,
+        label: `powershell${i}`,
+        dddddd: 'test',
+        type: 'custom-node',
+        degree: 10
+    }
+    const edge = {
+        source: `node${i}`,
+        target: 'center',
+        // label: `label${i}--center`,
+        style: {
+            lineDash: [5, 10],
+            endArrow: {
+                path: G6.Arrow.triangle(10, 10),
+                d: 100,
+            },
+        }
+    }
+    edgeArr.push(edge)
+    const edge1 = {
+        target: `node${i}`,
+        source: `node${i}-${i}`,
+        // label: `label${i}--node${i}-${i}`
+    }
+    edgeArr.push(edge1)
+    const curNode1 = {
+        id: `node${i}-${i}`,
+        // label: `powershell${i}-${i}`,
+        degree: 4,
+    }
+    nodeArr.push(curNode1)
+    nodeArr.push(curNode)
+}
+
+// 构造只有外层 or 只有里层节点
+function unshiftSpecialNode() {
+    nodeArr.unshift({
+        id: `special`,
+        label: `special`,
+        degree: 4
+    })
+    nodeArr.push({
+        id: `special1`,
+        label: `special`,
+        degree: 10
+    })
+    edgeArr.unshift({
+        source: `special`,
+        target: 'center',
+        label: `special--center`
+    })
+    edgeArr.push({
+        source: `special1`,
+        target: 'center',
+        label: `special--center`
+    })
+}
+unshiftSpecialNode()
+
+// 节点&边 数据
+const initData = {
+    nodes: nodeArr,
+    edges: edgeArr
+};
 
 // 构造空节点
 const nodes = initData.nodes
@@ -139,7 +96,6 @@ const centerEdges = edges.filter(i => i.target === 'center')
 centerEdges.forEach(item => {
     let curNode = nodes.find(i => i.id === item.source)
     if (curNode?.degree === 4) {
-        console.log(curNode)
         // 构建新节点
         let no = {
             "id": "empty" + curNode.id,
@@ -151,39 +107,100 @@ centerEdges.forEach(item => {
             }
         }
         let centerEdge = {
-            "source": "empty" + curNode.id,
-            "target": "center",
+            source: `empty${curNode.id}`,
+            target: "center",
         }
         let edge1 = {
-            "source": curNode.id,
-            "target": "empty" + curNode.id,
+            source: curNode.id,
+            target: `empty${curNode.id}`,
         }
         const idx = edges.findIndex(i => i.source === curNode.id)
         edges.splice(idx, 1)
-        edges.push(centerEdge)
-        edges.push(edge1)
-        nodes.push(no)
+        edges.unshift(centerEdge)
+        edges.unshift(edge1)
+        nodes.unshift(no)
     }
 })
 
-
 // 自定义布局
 G6.registerLayout('test-layout', ConcentricLayout)
+
+// 自定义节点
+G6.registerNode('custom-node',
+    {
+        draw(cfg, group) {
+            const size = cfg.size
+            const width = size - 14;
+            const height = size - 14;
+            const keyShape = group.addShape('image', {
+                name: 'image-shape',
+                attrs: {
+                    x: - width / 2,
+                    y: - height / 2,
+                    width: width,
+                    height: height,
+                    img: 'https://gw.alipayobjects.com/mdn/rms_f8c6a0/afts/img/A*aHqIQIXL0RMAAAAAAAAAAABkARQnAQ'
+                }
+            });
+            const textShape = group?.addShape('text', {
+                name: 'text-shape',
+                attrs: {
+                    x: 0, // 居中
+                    y: 20,
+                    textAlign: 'center',
+                    textBaseline: 'middle',
+                    text: cfg.label,
+                    fill: '#666',
+                },
+            })
+            return keyShape
+            // const dom = group.addShape('dom', {
+            //     attrs: {
+            //         // x: -35,
+            //         width: 80,
+            //         height: 30,
+            //         html: `<div style="position: relative;height: 40px;width: 80px;">
+            //             <div>${cfg.label}</div>
+            //             </div>`,
+            //     },
+            //     // must be assigned in G6 3.3 and later versions. it can be any value you want
+            //     name: 'dom-shape',
+            // });
+            // return dom;
+        }
+    }, 'circle')
+
+// 配置 tooltip
+const tooltip = new G6.Tooltip({
+    offsetX: 10,
+    offsetY: 20,
+    getContent(e) {
+        if (e.item?.getModel().label) {
+            const outDiv = document.createElement('div');
+            outDiv.style.width = '180px';
+            outDiv.innerHTML = `<span>${e.item.getModel().label}</span>`
+            return outDiv
+        }
+        return 'test-node'
+    },
+    itemTypes: ['node']
+});
 
 onMounted(() => {
     const width = g6ref.value.scrollWidth;
     const height = g6ref.value.scrollHeight || 500;
     const graph = new G6.Graph({
+        renderer: 'svg',
         container: 'mountNode', // 指定挂载容器
-        width, // 图的宽度
-        height, // 图的高度
+        width: 1000, // 图的宽度
+        height: 1000, // 图的高度
         layout: {
             type: 'test-layout',
-            center: [400, 400],     // 可选，
-            linkDistance: 150,         // 可选，边长
+            center: [500, 500],     // 可选，
+            linkDistance: 110,         // 可选，边长
             preventOverlap: true,     // 可选，必须配合 nodeSize
-            nodeSize: 150,             // 可选
-            maxLevelDiff: 1,
+            nodeSize: 190,             // 可选
+            maxLevelDiff: 2,
             sortBy: 'degree',         // 可选
         },
         defaultNode: {
@@ -191,7 +208,10 @@ onMounted(() => {
         },
         nodeStateStyles: {
             hover: {
-                cursor: 'pointer'
+                cursor: 'pointer',
+            },
+            running: {
+                fill: '#0e79ec',
             }
         },
         edgeStateStyles: {
@@ -199,27 +219,32 @@ onMounted(() => {
                 stroke: '#d3adf7',
                 cursor: 'pointer'
             },
-        }
-        // defaultEdge: {
-        //     stateStyles: {
-        //         hover: {
-        //             fill: '#d3adf7',
-        //         }
-        //     }
-        // }
+        },
+        plugins: [tooltip]
     });
-    // graph.data(data)
     graph.data(initData)
     graph.render()
     graph.on('node:mouseenter', (e) => {
         const { item } = e;
         graph.setItemState(item, 'hover', true)
+        const nodes = graph.getNodes()
+        nodes.forEach(node => {
+            if (node !== item) {
+                graph.setItemState(node, 'running', true)
+            }
+        })
+
     })
     graph.on('node:mouseleave', (evt) => {
         const { item } = evt;
-        showToolTip.value = true
         graph.setItemState(item, 'hover', false);
         graph.clearItemStates(item, 'selected')
+        const nodes = graph.getNodes()
+        nodes.forEach(node => {
+            if (node !== item) {
+                graph.clearItemStates(node, 'running')
+            }
+        })
     })
     graph.on('node:click', (e) => {
         const { item } = e
@@ -227,10 +252,9 @@ onMounted(() => {
         const model = item?.getModel()
         const { x: xVal, y: yVal } = model
         const point = graph.getCanvasByPoint(xVal, yVal)
-        x.value = point.x - 30
-        y.value = point.y - 60
+        x.value = point.x
+        y.value = point.y
         showToolTip.value = true
-        // const 
         console.log('click node', e)
     })
     graph.on('edge:mouseenter', (e) => {
@@ -251,6 +275,7 @@ onMounted(() => {
     <div>
         <div id="mountNode" ref="g6ref"></div>
         <HelloWorld :x="x" :y="y" v-if="showToolTip" msg="Vite + Vue" />
+        <IxSelect v-model:value="value" :dataSource="dataSource"></IxSelect>
     </div>
 </template>
 
@@ -270,7 +295,7 @@ onMounted(() => {
 }
 
 #mountNode {
-    width: 800px;
-    height: 800px;
+    width: 1000px;
+    height: 1000px;
 }
 </style>
