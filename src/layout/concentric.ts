@@ -273,10 +273,10 @@ export class ConcentricLayout extends Base {
         levels.forEach((level, levelIdx) => {
             const dTheta = level.dTheta;
             let rr = level.r;
-            if (levelIdx > 1) {
-                rr = rr * 3 / 4
-                console.log(level.r, rr, levelIdx)
-            }
+            // if (levelIdx > 1) {
+            //     rr = rr * 3 / 4
+            //     console.log(level.r, rr, levelIdx)
+            // }
             level.forEach((node: INode, j: number) => {
                 let theta = self.startAngle + (self.clockwise ? 1 : -1) * dTheta * j;
                 const targetNode = findNode(node)
