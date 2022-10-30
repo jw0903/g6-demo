@@ -94,7 +94,6 @@ export class ConcentricLayout extends Base {
             sortBy: "degree"
         };
     }
-
     /**
      * 执行布局
      */
@@ -121,7 +120,6 @@ export class ConcentricLayout extends Base {
         if (n === 1) {
             nodes[0].x = center[0];
             nodes[0].y = center[1];
-            nodes[0].level = 0;
             self.onLayoutEnd?.();
             return;
         }
@@ -209,7 +207,6 @@ export class ConcentricLayout extends Base {
                     levels.push(currentLevel);
                 }
             }
-            node.level = levels.length
             currentLevel.push(node);
         });
 
@@ -273,10 +270,6 @@ export class ConcentricLayout extends Base {
         levels.forEach((level, levelIdx) => {
             const dTheta = level.dTheta;
             let rr = level.r;
-            // if (levelIdx > 1) {
-            //     rr = rr * 3 / 4
-            //     console.log(level.r, rr, levelIdx)
-            // }
             level.forEach((node: INode, j: number) => {
                 let theta = self.startAngle + (self.clockwise ? 1 : -1) * dTheta * j;
                 const targetNode = findNode(node)
