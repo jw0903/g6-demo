@@ -3,8 +3,7 @@ import { ref, onMounted } from 'vue'
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import HelloWorld from './components/HelloWorld.vue'
 import { ConcentricLayout } from './layout/concentric'
-// import data from './data.json'
-import G6, { ModelConfig } from '@antv/g6'
+import G6, { ModelConfig, Item, Graph } from '@antv/g6'
 const g6ref = ref()
 
 // tooltip 相关配置
@@ -19,6 +18,12 @@ const nodeArr: any[] = [{
     degree: 100,
     size: 100,
     type: 'image',
+    img: 'https://gw.alipayobjects.com/mdn/rms_f8c6a0/afts/img/A*w5uESbSe430AAAAAAAAAAABkARQnAQ',
+    clipCfg: {
+        show: true,
+        type: 'circle',
+        r: 100
+    }
 }]
 const edgeArr = []
 for (let i = 1; i < 18; i++) {
@@ -27,22 +32,17 @@ for (let i = 1; i < 18; i++) {
         label: `powershell${i}`,
         dddddd: 'test',
         type: 'custom-node',
-        degree: 10,
-        anchorPoints: [
-            [0.5, 0.5],
-            [0.5, 0.5],
-        ],
+        degree: 10
     }
     const edge = {
-        // source: `node${i}`,
         source: `node${i}`,
         target: 'center',
         // label: `label${i}--center`,
         style: {
             lineDash: [10, 2],
             endArrow: {
-                path: G6.Arrow.triangle(8, 10, 40),
-                d: -45,
+                path: G6.Arrow.triangle(8, 10, 55),
+                d: 0,
                 fill: '#ccc',
             }
         }
@@ -53,17 +53,13 @@ for (let i = 1; i < 18; i++) {
         target: `node${i}`,
         style: {
             lineDash: [10, 2],
-            endArrow: {
-                path: G6.Arrow.circle(5, 10),
-                d: 10
-            }
         },
-        targetAnchor: 12
     }
     edgeArr.push(edge1)
     const curNode1 = {
         id: `node${i}-${i}`,
         degree: 4,
+        count: 10 + i,
         type: 'outer-node',
     }
     nodeArr.push(curNode1)
@@ -152,8 +148,8 @@ G6.registerLayout('test-layout', ConcentricLayout)
 G6.registerNode(
     'outer-node',
     {
-        draw(cfg, group) {
-            const size = cfg.size
+        draw(cfg: ModelConfig, group) {
+            const size = cfg.size as number
             const width = size - 14;
             const height = size - 14;
             const circleShape = group?.addShape('circle', {
@@ -175,69 +171,55 @@ G6.registerNode(
                     img: 'https://gw.alipayobjects.com/mdn/rms_f8c6a0/afts/img/A*aHqIQIXL0RMAAAAAAAAAAABkARQnAQ'
                 }
             });
+            group?.addShape('rect', {
+                name: 'rect-shape',
+                attrs: {
+                    width: 24,
+                    height: 20,
+                    x: 8,
+                    y: -26,
+                    radius: [4],
+                    fill: '#000',
+                }
+            })
             group?.addShape('text', {
                 name: 'num-shape',
                 attrs: {
                     x: 20,
-                    y: -10,
+                    y: -16,
                     textAlign: 'center',
                     textBaseline: 'middle',
-                    text: '100',
-                    fill: '#ccc',
-                    background: {
-                        fill: '#ffffff',
-                        stroke: 'green',
-                        padding: [3, 2, 3, 2],
-                        radius: 2,
-                        lineWidth: 3,
-                    },
+                    text: cfg.count,
+                    fill: '#fff'
                 },
             })
             return circleShape
         },
-        setState(name, value, item) {
-            const shape = item.get('keyShape');
-            if (name === 'running') {
-                shape.animate(
-                    () => {
-                        return {
-                            opacity: value ? 0.3 : 1,
-                        }
-                    },
-                    {
-                        repeat: false,
-                        duration: 200
-                    }
-                )
+        setState(name: string, value: boolean, item: Item): void {
+            const group = item?.getContainer()
+            const shapeArr = group?.get('children')
+            const circleShape = item.get('keyShape');
+            if (name === 'running' && value) {
+                shapeArr.forEach(i => {
+                    i.attr('opacity', 0.3)
+                })
+            }
+            if (name === 'running' && !value) {
+                shapeArr.forEach(i => {
+                    i.attr('opacity', 1)
+                })
             }
             if ((name === 'hover') && value) {
-                shape.animate(
-                    () => {
-                        // 返回需要修改的参数集，这里修改了 lineDash,lineDashOffset
-                        return {
-                            r: 30,
-                            fill: '#1C6EFF'
-                        };
-                    },
-                    {
-                        repeat: false, // 动画重复
-                        duration: 200, // 一次动画的时长为 3000
-                    },
-                )
+                circleShape.attr({
+                    r: 30,
+                    fill: '#1C6EFF'
+                })
             }
             if (name === 'hover' && !value) {
-                shape.stopAnimate();
-                shape.animate(
-                    () => {
-                        return {
-                            r: 21,
-                            fill: '#E1E5EB'
-                        }
-                    }, {
-                    repeat: false,
-                    duration: 200
-                }
-                )
+                circleShape.attr({
+                    r: 21,
+                    fill: '#E1E5EB'
+                })
             }
         }
     },
@@ -246,8 +228,8 @@ G6.registerNode(
 // 自定义节点
 G6.registerNode('custom-node',
     {
-        draw(cfg, group) {
-            const size = cfg.size
+        draw(cfg: ModelConfig, group) {
+            const size = cfg.size as number
             const width = size - 14;
             const height = size - 14;
             const keyShape = group.addShape('image', {
@@ -258,11 +240,6 @@ G6.registerNode('custom-node',
                     width: 28,
                     height: 28,
                     img: 'https://gw.alipayobjects.com/mdn/rms_f8c6a0/afts/img/A*aHqIQIXL0RMAAAAAAAAAAABkARQnAQ',
-                    clipCfg: {
-                        show: false,
-                        type: 'circle',
-                        r: 15
-                    }
                 }
             });
             group?.addShape('text', {
@@ -278,35 +255,18 @@ G6.registerNode('custom-node',
             })
             return keyShape
         },
-        setState(name, value, item) {
+        setState(name: string, value: boolean, item: Item) {
             const shape = item.get('keyShape');
             // 监听 running 状态
             if ((name === 'running') && value) {
-                shape.animate(
-                    () => {
-                        // 返回需要修改的参数集，这里修改了 lineDash,lineDashOffset
-                        return {
-                            opacity: 0.3
-                        };
-                    },
-                    {
-                        repeat: false, // 动画重复
-                        duration: 200, // 一次动画的时长为 3000
-                    },
-                )
+                shape.attr({
+                    opacity: 0.3
+                })
             }
-            if (name === 'running' && !value) {
-                shape.stopAnimate();
-                shape.animate(
-                    () => {
-                        return {
-                            opacity: 1
-                        }
-                    }, {
-                    repeat: false,
-                    duration: 200
-                }
-                )
+            if ((name === 'running') && !value) {
+                shape.attr({
+                    opacity: 1
+                })
             }
         }
     })
@@ -330,7 +290,7 @@ const tooltip = new G6.Tooltip({
 // 配置 toolbar
 const toolbar = new G6.ToolBar();
 onMounted(() => {
-    const graph = new G6.Graph({
+    const graph: Graph = new G6.Graph({
         // renderer: 'svg',
         container: 'mountNode', // 指定挂载容器
         width: 1280, // 图的宽度
@@ -340,11 +300,11 @@ onMounted(() => {
         },
         layout: {
             type: 'test-layout',
-            center: [300, 300],     // 可选，
-            linkDistance: 10,         // 可选，边长
+            center: [400, 400],     // 可选，
+            linkDistance: 100,         // 可选，边长
             preventOverlap: true,     // 可选，必须配合 nodeSize
-            nodeSize: 10,             // 可选
-            maxLevelDiff: 2,
+            nodeSize: 80,             // 可选
+            maxLevelDiff: 5,
             sortBy: 'degree',         // 可选
         },
         defaultNode: {
@@ -353,7 +313,6 @@ onMounted(() => {
         nodeStateStyles: {
             hover: {
                 cursor: 'pointer',
-                stroke: 'blue',
             },
             running: {
                 // opacity: 0.3
@@ -380,7 +339,6 @@ onMounted(() => {
             edgeArr.push(...edges)
             let nodes = item.getNeighbors('target')
             if (nodes.length) {
-                // const curModel = nodes[0].getModel()
                 const curEdges = nodes[0]?.getOutEdges()
                 edgeArr.push(...curEdges)
             }
